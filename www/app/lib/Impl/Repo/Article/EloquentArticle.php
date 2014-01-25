@@ -1,5 +1,8 @@
 <?php namespace Impl\Repo\Article;
 
+use Illuminate\Database\Eloquent\Model;
+use Impl\Repo\Tag\TagInterface;
+
 class EloquentArticle implements ArticleInterface {
 
 	protected $article;
