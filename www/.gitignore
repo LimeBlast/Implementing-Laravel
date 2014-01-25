@@ -1,4 +1,8 @@
-# Ignore everything in this directory
-*
-# Except this file
-!.gitignore
+/bootstrap/compiled.php
+/vendor
+composer.phar
+composer.lock
+.env.local.php
+.env.php
+.DS_Store
+Thumbs.db
