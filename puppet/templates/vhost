@@ -1,6 +1,8 @@
 <VirtualHost *:80>
 	DocumentRoot /var/www/public
 	
+	ServerAlias 192.168.56.101.xip.io
+	
 	<Directory />
 		Options FollowSymLinks
 		AllowOverride None
