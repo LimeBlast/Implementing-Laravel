@@ -28,8 +28,8 @@ class ContentController extends BaseController {
 			$perPage
 		);
 
-		return View::make('home')
-			->with('articles', $articles);
+		return $articles;
+
 	}
 
 }

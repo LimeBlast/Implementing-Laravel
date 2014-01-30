@@ -43,6 +43,8 @@ class EloquentArticle implements ArticleInterface {
 		// Create object to return data useful for pagination
 		$result->items      = $articles->all();
 		$result->totalItems = $this->totalArticles();
+
+		return $result;
 	}
 
 	/**
