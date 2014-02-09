@@ -3,6 +3,16 @@
 interface ArticleInterface {
 
 	/**
+	 * Retrieve article by id
+	 * regardless of status
+	 *
+	 * @param  int $id Article ID
+	 *
+	 * @return object Object of article information
+	 */
+	public function byId($id);
+
+	/**
 	 * Get paginated articles.
 	 *
 	 * @param int $page  Current Page.

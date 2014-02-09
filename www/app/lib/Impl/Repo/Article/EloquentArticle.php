@@ -4,6 +4,21 @@ use Illuminate\Database\Eloquent\Model;
 use Impl\Repo\Tag\TagInterface;
 
 class EloquentArticle implements ArticleInterface {
+	/**
+	 * Retrieve article by id
+	 * regardless of status
+	 *
+	 * @param  int $id Article ID
+	 *
+	 * @return object Object of article information
+	 */
+	public function byId($id)
+	{
+		return $this->article->with('status')
+			->with('tags')
+			->where('id', $id)
+			->first();
+	}
 
 	protected $article;
 	protected $tag;

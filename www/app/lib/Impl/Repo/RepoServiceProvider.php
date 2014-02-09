@@ -1,9 +1,11 @@
 <?php namespace Impl\Repo;
 
 use Article;
+use Impl\Repo\Article\CacheDecorator;
 use Impl\Repo\Tag\EloquentTag;
 use Impl\Repo\Article\EloquentArticle;
 use Illuminate\Support\ServiceProvider;
+use Impl\Service\Cache\LaravelCache;
 
 class RepoServiceProvider extends ServiceProvider {
 
@@ -14,15 +16,24 @@ class RepoServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
-		$this->app->bind('Impl\Repo\Tag\TagInterface', function ($app) {
-			return new EloquentTag(new Tag);
-		});
+		$app = $this->app;
 
-		$this->app->bind('Impl\Repo\Article\ArticleInterface', function ($app) {
-			return new EloquentArticle(
+		$app->bind('Impl\Repo\Article\ArticleInterface', function($app){
+			// assign the article repo to a variable
+			$article = new EloquentArticle(
 				new Article,
 				$app->make('Impl\Repo\Tag\TagInterface')
 			);
+
+			return new CacheDecorator(
+				$article,
+				// our new cache service class
+				new LaravelCache($app['cache'], 'articles', 10)
+			);
+		});
+
+		$app->bind('Impl\Repo\Tag\TagInterface', function ($app) {
+			return new EloquentTag(new Tag);
 		});
 	}
 }
