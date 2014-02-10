@@ -16,4 +16,6 @@ Route::get('/', function()
 	return View::make('hello');
 });
 
+Route::resource('articles', 'ArticleController', ['only' => ['create', 'store']]);
+
 Route::get('/home', 'ContentController@home');
