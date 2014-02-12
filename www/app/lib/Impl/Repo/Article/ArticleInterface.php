@@ -42,4 +42,22 @@ interface ArticleInterface {
 	 */
 	public function byTag($tag, $page = 1, $limit = 10);
 
+	/**
+	 * Create a new article
+	 *
+	 * @param array $data Data to create a new object
+	 *
+	 * @return boolean
+	 */
+	public function create(array $data);
+
+	/**
+	 * Update an existing article
+	 *
+	 * @param array $data Data to update an article
+	 *
+	 * @return boolean
+	 */
+	public function update(array $data);
+
 }

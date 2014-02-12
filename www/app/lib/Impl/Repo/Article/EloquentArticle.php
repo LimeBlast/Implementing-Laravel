@@ -145,4 +145,76 @@ class EloquentArticle implements ArticleInterface {
 			->where('status_id', 1)
 			->count();
 	}
+
+	/**
+	 * Create a new article
+	 *
+	 * @param array $data Data to create a new object
+	 *
+	 * @return boolean
+	 */
+	public function create(array $data)
+	{
+		// create the article
+		$article = $this->article->create([
+			'user_id'   => $data['user_id'],
+			'status_id' => $data['status_id'],
+			'title'     => $data['title'],
+			'slug'      => $data['slug'],
+			'excerpt'   => $data['excerpt'],
+			'content'   => $data['content'],
+		]);
+
+		if (! $article) {
+			return false;
+		}
+
+		// Helper method
+		$this->syncTags($article, $data['tags']);
+
+		return true;
+	}
+
+	/**
+	 * Update an existing article
+	 *
+	 * @param array $data Data to update an article
+	 *
+	 * @return boolean
+	 */
+	public function update(array $data)
+	{
+		$article = $this->article->find($data['id']);
+
+		if (! $article) {
+			return false;
+		}
+
+		$article->user_id   = $data['user_id'];
+		$article->status_id = $data['status_id'];
+		$article->title     = $data['title'];
+		$article->slug      = $this->slug($data['title']);
+		$article->excerpt   = $data['excerpt'];
+		$article->content   = $data['content'];
+
+		$article->save();
+
+		// helper method
+		$this->syncTags($article, $data['tags']);
+	}
+
+	protected function syncTags(Model $article, array $tags)
+	{
+		// return tags after retrieving existing and creating new tags
+		$tags = $this->tag->findOrCreate($tags);
+
+		$tagIds = [];
+		$tags->each(function ($tag) use ($tagIds) {
+			$tagIds[] = $tag->id;
+		});
+
+		// assign set tags to article
+		$article->tags()->sync($tagIds);
+	}
+
 }
