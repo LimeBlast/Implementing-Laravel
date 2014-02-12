@@ -111,6 +111,9 @@ return array(
 		'Way\Generators\GeneratorsServiceProvider',
 
 		'Impl\Repo\RepoServiceProvider',
+		'Impl\Service\Form\FormServiceProvider',
+		'Impl\Service\Notification\NotificationServiceProvider',
+		'Impl\Exception\ExceptionServiceProvider',
 
 	),
 

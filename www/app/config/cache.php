@@ -84,6 +84,6 @@ return array(
 	|
 	*/
 
-	'prefix' => 'laravel',
+	'prefix' => '2013-02-12',
 
 );

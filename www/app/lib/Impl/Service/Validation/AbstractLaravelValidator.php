@@ -1,92 +1,80 @@
-<?php  namespace Impl\Service\Validation;
+<?php namespace Impl\Service\Validation;
 
-use Illuminate\Validation\Factory as Validator;
+use Illuminate\Validation\Factory;
 
-class AbstractLaravelValidator implements ValidableInterface {
+abstract class AbstractLaravelValidator implements ValidableInterface {
 
-	/**
-	 * @var \Illuminate\Validation\Factory
-	 */
-	protected $validator;
+    /**
+     * Validator
+     *
+     * @var \Illuminate\Validation\Factory
+     */
+    protected $validator;
 
-	/**
-	 * Validation data key => value array
-	 *
-	 * @var array
-	 */
-	protected $data = [];
+    /**
+     * Validation data key => value array
+     *
+     * @var Array
+     */
+    protected $data = array();
 
-	/**
-	 * Validation errors
-	 *
-	 * @var array
-	 */
-	protected $errors = [];
+    /**
+     * Validation errors
+     *
+     * @var Array
+     */
+    protected $errors = array();
 
-	/**
-	 * Validation rules
-	 *
-	 * @var array
-	 */
-	protected $rules = [];
+    /**
+     * Validation rules
+     *
+     * @var Array
+     */
+    protected $rules = array();
 
-	/**
-	 * Custom validation messages
-	 *
-	 * @var array
-	 */
-	protected $messages = [];
+    public function __construct(Factory $validator)
+    {
+        $this->validator = $validator;
+    }
 
-	/**
-	 * @param Validator $validator
-	 */
-	function __construct(Validator $validator)
-	{
-		$this->validator = $validator;
-	}
+    /**
+     * Set data to validate
+     *
+     * @return \Impl\Service\Validation\AbstractLaravelValidator
+     */
+    public function with(array $data)
+    {
+        $this->data = $data;
 
-	/**
-	 * Set data to the validate
-	 *
-	 * @param array $data
-	 *
-	 * @return \Impl\Service\Validation\AbstractLaravelValidator
-	 */
-	public function with(array $data)
-	{
-		$this->data = $data;
+        return $this;
+    }
 
-		return $this;
-	}
+    /**
+     * Validation passes or fails
+     *
+     * @return Boolean
+     */
+    public function passes()
+    {
+        $validator = $this->validator->make($this->data, $this->rules);
 
-	/**
-	 * Test if validation passes
-	 *
-	 * @return boolean
-	 */
-	public function passes()
-	{
-		$validator = $this->validator->make(
-			$this->data,
-			$this->rules,
-			$this->messages
-		);
+        if( $validator->fails() )
+        {
+            $this->errors = $validator->messages();
+            return false;
+        }
 
-		if ($validator->fails()) {
-			$this->errors = $validator->messages();
-			return false;
-		}
+        return true;
+    }
 
-		return true;
-	}
+    /**
+     * Return errors, if any
+     *
+     * @return array
+     */
+    public function errors()
+    {
+        return $this->errors;
+    }
 
-	/**
-	 * Retrieve validation errors
-	 *
-	 * @return array
-	 */
-	public function errors()
-	{
-		return $this->errors;
-	}
 }

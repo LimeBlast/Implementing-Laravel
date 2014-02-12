@@ -1,220 +1,229 @@
 <?php namespace Impl\Repo\Article;
 
-use Illuminate\Database\Eloquent\Model;
+use Impl\Repo\RepoAbstract;
 use Impl\Repo\Tag\TagInterface;
+use Illuminate\Database\Eloquent\Model;
 
-class EloquentArticle implements ArticleInterface {
-	/**
-	 * Retrieve article by id
-	 * regardless of status
-	 *
-	 * @param  int $id Article ID
-	 *
-	 * @return object Object of article information
-	 */
-	public function byId($id)
-	{
-		return $this->article->with('status')
-			->with('tags')
-			->where('id', $id)
-			->first();
-	}
+class EloquentArticle extends RepoAbstract implements ArticleInterface {
 
-	protected $article;
-	protected $tag;
+    protected $article;
+    protected $tag;
 
-	// Class dependency: Eloquent model and implementation of TagInterface
-	public function __construct(Model $article, TagInterface $tag)
-	{
-		$this->article = $article;
-		$this->tag     = $tag;
-	}
+    // Class expects an Eloquent model
+    public function __construct(Model $article, TagInterface $tag)
+    {
+        $this->article = $article;
+        $this->tag = $tag;
+    }
 
-	/**
-	 * Get paginated articles.
-	 *
-	 * @param int $page  Current Page.
-	 * @param int $limit Number of articles per page.
-	 *
-	 * @return object Object with $items and $totalItems for pagination.
-	 */
-	public function byPage($page = 1, $limit = 10)
-	{
-		$result = new \StdClass;
+    /**
+     * Retrieve article by id
+     * regardless of status
+     *
+     * @param  int $id Article ID
+     * @return stdObject object of article information
+     */
+    public function byId($id)
+    {
+        return $this->article->with('status')
+                ->with('author')
+                ->with('tags')
+                ->where('id', $id)
+                ->first();
+    }
 
-		$result->page       = $page;
-		$result->limit      = $limit;
-		$result->totalItems = 0;
-		$result->items      = [];
+    /**
+     * Get paginated articles
+     *
+     * @param int $page Number of articles per page
+     * @param int $limit Results per page
+     * @param boolean $all Show published or all
+     * @return StdClass Object with $items and $totalItems for pagination
+     */
+    public function byPage($page=1, $limit=10, $all=false)
+    {
+        $result = new \StdClass;
+        $result->page = $page;
+        $result->limit = $limit;
+        $result->totalItems = 0;
+        $result->items = array();
 
-		$articles = $this->article
-			->with('tags')
-			->where('status_id', 1)
-			->orderBy('created_at', 'desc')
-			->skip($limit * ($page - 1))
-			->take($limit)
-			->get();
+        $query = $this->article->with('status')
+                               ->with('author')
+                               ->with('tags')
+                               ->orderBy('created_at', 'desc');
 
-		// Create object to return data useful for pagination
-		$result->items      = $articles->all();
-		$result->totalItems = $this->totalArticles();
+        if( ! $all )
+        {
+            $query->where('status_id', 1);
+        }
 
-		return $result;
-	}
+        $articles = $query->skip( $limit * ($page-1) )
+                        ->take($limit)
+                        ->get();
 
-	/**
-	 * Get single article by URL.
-	 *
-	 * @param string $slug URL slug or article.
-	 *
-	 * @return object Object of article information.
-	 */
-	public function bySlug($slug)
-	{
-		// Include tags using Eloquent relationships
-		return $this->article
-			->with('tags')
-			->where('status_id', 1)
-			->where('slug', $slug)
-			->first();
-	}
+        $result->totalItems = $this->totalArticles($all);
+        $result->items = $articles->all();
 
-	/**
-	 * Get articles by their tag
-	 *
-	 * @param string $tag   URL slug of tag.
-	 * @param int    $page  Current page.
-	 * @param int    $limit Number of articles per page.
-	 *
-	 * @return object Object with $items and $totalItems for pagination.
-	 */
-	public function byTag($tag, $page = 1, $limit = 10)
-	{
-		$foundTag = $this->tag
-			->where('slug', $tag)
-			->first();
+        return $result;
+    }
 
-		$result = new \StdClass;
+    /**
+     * Get single article by URL
+     *
+     * @param string  URL slug of article
+     * @return object object of article information
+     */
+    public function bySlug($slug)
+    {
+        return $this->article->with('status')
+                            ->with('author')
+                            ->with('tags')
+                            ->where('slug', $slug)
+                            ->where('status_id', 1)
+                            ->first();
+    }
 
-		$result->page       = $page;
-		$result->limit      = $limit;
-		$result->totalItems = 0;
-		$result->items      = [];
+   /**
+     * Get articles by their tag
+     *
+     * @param string  URL slug of tag
+     * @param int Number of articles per page
+     * @return StdClass Object with $items and $totalItems for pagination
+     */
+    public function byTag($tag, $page=1, $limit=10)
+    {
+        $foundTag = $this->tag->where('slug', $tag)->first();
 
-		if (! $foundTag) {
-			return $result;
-		}
+        $result = new \StdClass;
+        $result->page = $page;
+        $result->limit = $limit;
+        $result->totalItems = 0;
+        $result->items = array();
 
-		$articles = $this->tag->articles()
-			->where('articles.status_id', 1)
-			->orderBy('articles.created_at', 'desc')
-			->skip($limit * ($page - 1))
-			->take($limit)
-			->get();
+        if( !$foundTag )
+        {
+            return $result;
+        }
 
-		$result->totalItems = $this->totalByTag($tag);
-		$result->items      = $articles->all();
+        $articles = $this->tag->articles()
+                        ->where('articles.status_id', 1)
+                        ->orderBy('articles.created_at', 'desc')
+                        ->skip( $limit * ($page-1) )
+                        ->take($limit)
+                        ->get();
 
-		return $result;
-	}
+        $result->totalItems = $this->totalByTag();
+        $result->items = $articles->all();
 
-	/**
-	 * Get total article count
-	 *
-	 * @return int Total articles
-	 */
-	protected function totalArticles()
-	{
-		return $this->article
-			->where('status_id', 1)
-			->count();
-	}
+        return $result;
+    }
 
-	/**
-	 * Get total articles count per tag
-	 *
-	 * @param string $tag Tag slug
-	 *
-	 * @return int Total articles per tag
-	 */
-	protected function totalByTag($tag)
-	{
-		return $this->tag
-			->bySlug($tag)
-			->articles()
-			->where('status_id', 1)
-			->count();
-	}
+    /**
+     * Create a new Article
+     *
+     * @param array  Data to create a new object
+     * @return boolean
+     */
+    public function create(array $data)
+    {
+        // Create the article
+        $article = $this->article->create(array(
+            'user_id' => $data['user_id'],
+            'status_id' => $data['status_id'],
+            'title' => $data['title'],
+            'slug' => $this->slug($data['title']),
+            'excerpt' => $data['excerpt'],
+            'content' => $data['content'],
+        ));
 
-	/**
-	 * Create a new article
-	 *
-	 * @param array $data Data to create a new object
-	 *
-	 * @return boolean
-	 */
-	public function create(array $data)
-	{
-		// create the article
-		$article = $this->article->create([
-			'user_id'   => $data['user_id'],
-			'status_id' => $data['status_id'],
-			'title'     => $data['title'],
-			'slug'      => $data['slug'],
-			'excerpt'   => $data['excerpt'],
-			'content'   => $data['content'],
-		]);
+        if( ! $article )
+        {
+            return false;
+        }
 
-		if (! $article) {
-			return false;
-		}
+        $this->syncTags($article, $data['tags']);
 
-		// Helper method
-		$this->syncTags($article, $data['tags']);
+        return true;
+    }
 
-		return true;
-	}
+    /**
+     * Update an existing Article
+     *
+     * @param array  Data to update an Article
+     * @return boolean
+     */
+    public function update(array $data)
+    {
+        $article = $this->article->find($data['id']);
+        $article->user_id = $data['user_id'];
+        $article->status_id = $data['status_id'];
+        $article->title = $data['title'];
+        $article->slug = $this->slug($data['title']);
+        $article->excerpt = $data['excerpt'];
+        $article->content = $data['content'];
+        $article->save();
 
-	/**
-	 * Update an existing article
-	 *
-	 * @param array $data Data to update an article
-	 *
-	 * @return boolean
-	 */
-	public function update(array $data)
-	{
-		$article = $this->article->find($data['id']);
+        $this->syncTags($article, $data['tags']);
 
-		if (! $article) {
-			return false;
-		}
+        return true;
+    }
 
-		$article->user_id   = $data['user_id'];
-		$article->status_id = $data['status_id'];
-		$article->title     = $data['title'];
-		$article->slug      = $this->slug($data['title']);
-		$article->excerpt   = $data['excerpt'];
-		$article->content   = $data['content'];
+    /**
+     * Sync tags for article
+     *
+     * @param \Illuminate\Database\Eloquent\Model  $article
+     * @param array  $tags
+     * @return void
+     */
+    protected function syncTags(Model $article, array $tags)
+    {
+        // Create or add tags
+        $found = $this->tag->findOrCreate( $tags );
 
-		$article->save();
+        $tagIds = array();
 
-		// helper method
-		$this->syncTags($article, $data['tags']);
-	}
+        foreach($found as $tag)
+        {
+            $tagIds[] = $tag->id;
+        }
 
-	protected function syncTags(Model $article, array $tags)
-	{
-		// return tags after retrieving existing and creating new tags
-		$tags = $this->tag->findOrCreate($tags);
+        // Assign set tags to article
+        $article->tags()->sync($tagIds);
+    }
 
-		$tagIds = [];
-		$tags->each(function ($tag) use ($tagIds) {
-			$tagIds[] = $tag->id;
-		});
+    /**
+     * Get total article count
+     *
+     * @todo I hate that this is public for the decorators.
+     *       Perhaps interface it?
+     * @return int  Total articles
+     */
+    protected function totalArticles($all = false)
+    {
+        if( ! $all )
+        {
+            return $this->article->where('status_id', 1)->count();
+        }
 
-		// assign set tags to article
-		$article->tags()->sync($tagIds);
-	}
+        return $this->article->count();
+    }
+
+    /**
+     * Get total article count per tag
+     *
+     * @todo I hate that this is public for the decorators
+     *       Perhaps interface it?
+     * @param  string  $tag  Tag slug
+     * @return int     Total articles per tag
+     */
+    protected function totalByTag($tag)
+    {
+        return $this->tag->bySlug($tag)
+                    ->articles()
+                    ->where('status_id', 1)
+                    ->count();
+    }
+
 
 }

@@ -4,32 +4,47 @@ use Impl\Repo\Article\ArticleInterface;
 
 class ContentController extends BaseController {
 
-	protected $article;
+    protected $layout = 'layout';
 
-	// Class Dependency: Subclass of ArticleInterface
-	function __construct(ArticleInterface $article)
-	{
-		$this->article = $article;
-	}
+    protected $article;
 
-	// Home page route
-	public function home()
-	{
-		$page    = Input::get('page', 1);
-		$perPage = 10;
+    public function __construct(ArticleInterface $article)
+    {
+        $this->article = $article;
+    }
 
-		// Get 10 latest articles with pagination, still get "arrayable" collection of articles
-		$paginationData = $this->article->byPage($page, $perPage);
+    /**
+     * Paginated articles
+     * GET /
+     */
+    public function home()
+    {
+        $page = Input::get('page', 1);
 
-		// Pagination made here, it's not the responsibility of the repository. See section of cacheing layer.
-		$articles = Paginator::make(
-			$paginationData->items,
-			$paginationData->totalItems,
-			$perPage
-		);
+        // Candidate for config item
+        $perPage = 3;
 
-		return $articles;
+        $pagiData = $this->article->byPage($page, $perPage);
 
-	}
+        $articles = Paginator::make($pagiData->items, $pagiData->totalItems, $perPage);
+
+        $this->layout->content = View::make('home')->with('articles', $articles);
+    }
+
+    /**
+     * Single article
+     * GET /{slug}
+     */
+    public function article($slug)
+    {
+        $article = $this->article->bySlug($slug);
+
+        if( ! $article )
+        {
+            App::abort(404);
+        }
+
+        $this->layout->content = View::make('article')->with('article', $article);
+    }
 
 }
